@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        h1 {
+            color: #17a2b8;
+            /* Blue */
+            text-align: center;
+            margin-top: 0;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+            /* Dark Gray */
+        }
+
+        input[type="text"],
+        input[type="date"],
+        select {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button[type="submit"] {
+            background-color: #28a745;
+            /* Green */
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            display: block;
+            margin-top: 10px;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #218838;
+            /* Dark Green */
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            background-color: #ffc107;
+            /* Yellow */
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            /* Red */
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+            /* Dark Red */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>To-Do List</h1>
+        <form id="addTaskForm">
+            <label for="title">Title:</label>
+            <input type="text" id="title" name="title" required><br>
+            <label for="date">Date:</label>
+            <input type="date" id="date" name="date" required><br>
+            <label for="type">Type:</label>
+            <select id="type" name="type" required>
+                <option value="">Select Task Type</option>
+                <option value="Work">Work</option>
+                <option value="Personal">Personal</option>
+                <option value="Study">Study</option>
+                <option value="Other">Other</option>
+            </select><br>
+            <button type="submit">Add Task</button>
+        </form>
+
+        <ul id="taskList"></ul>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const addTaskForm = document.getElementById('addTaskForm');
+            const taskList = document.getElementById('taskList');
+
+            // Function to fetch tasks from the server
+            const fetchTasks = async () => {
+                try {
+                    const response = await fetch('/viewTasks');
+                    const tasks = await response.json();
+                    displayTasks(tasks);
+                } catch (error) {
+                    console.error('Error fetching tasks:', error);
+                }
+            };
+
+            // Function to display tasks on the page
+            const displayTasks = (tasks) => {
+                taskList.innerHTML = '';
+                tasks.forEach(task => {
+                    const li = document.createElement('li');
+                    li.textContent = `${task.title} - ${task.date} - ${task.type}`;
+
+                    // Create delete button
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.addEventListener('click', () => deleteTask(task.id));
+
+                    li.appendChild(deleteBtn);
+                    taskList.appendChild(li);
+                });
+            };
+
+            // Function to delete a task
+            const deleteTask = async (taskId) => {
+                try {
+                    const response = await fetch(`/deleteTasks/${taskId}`, {
+                        method: 'DELETE'
+                    });
+                    if (response.ok) {
+                        fetchTasks(); // Fetch updated tasks after deleting a task
+                    } else {
+                        console.error('Error deleting task:', response.statusText);
+                    }
+                } catch (error) {
+                    console.error('Error deleting task:', error);
+                }
+            };
+
+            fetchTasks();
+
+            addTaskForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const formData = new FormData(addTaskForm);
+                const title = formData.get('title');
+                const date = formData.get('date');
+                const type = formData.get('type');
+                try {
+                    const response = await fetch('/addTasks', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ title, date, type })
+                    });
+                    const newTask = await response.json();
+                    fetchTasks(); // Fetch updated tasks after adding a new one
+                    addTaskForm.reset(); // Reset the form
+                } catch (error) {
+                    console.error('Error adding task:', error);
+                }
+            });
+        });
+
+
+
+    </script>
+</body>
+
+</html>
